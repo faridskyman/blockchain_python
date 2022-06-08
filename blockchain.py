@@ -1,3 +1,5 @@
+from configparser import NoSectionError
+from optparse import Values
 import sys
 import hashlib
 import json
@@ -170,6 +172,43 @@ def new_transaction():
 
     response = {'message': f'Transaction will be added to the Block {index}'}
     return (jsonify(response), 201)
+
+
+@app.route("/nodes/add_nodes", methods=['POST'])
+def add_nodes():
+    # get the nodes passed from client
+    values = request.get_json()
+    nodes = values.get('nodes')
+
+    if nodes is None:
+        return "Error: missing node(s) info", 400
+    
+    for node in nodes:
+        blockchain.add_nodes(node)
+
+        response = {
+            'message': 'New nodes added',
+            'nodes': list(blockchain.nodes),
+        }
+        return jsonify(response), 201
+
+@app.route('/nodes/sync', methods=['GET'])
+def sync():
+    updated = blockchain.update_blockchain()
+    if updated:
+        response = {
+            'message': 'the blockchain has been updated to the latest',
+            'blockchain': blockchain.chain
+        }
+    else:
+        response = {
+            'message': 'out blockchain is already the latest',
+            'blockchain': blockchain.chain
+        }
+    return jsonify(response), 200
+
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(sys.argv[1]))
